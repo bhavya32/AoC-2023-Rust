@@ -26,19 +26,21 @@ fn main() {
     //let mut sum = 0;
     let text = get_text();
     let mut txt = text.split("\n");
-    let mut time = String::from("");
-    let mut distance= String::from("");
-    for num in txt.next().unwrap().split(" ").filter(|p| *p != "Time:" && *p!= "") {
-            time +=(num);
+    let mut time:Vec<u64>= vec![];
+    let mut distance:Vec<u64>= vec![];
+    for num in txt.next().unwrap().split(" ").filter(|p| *p != "Time:" && *p!= "")
+        .map(|p| p.parse::<u64>().unwrap()) {
+            time.push(num);
     }
-    for num in txt.next().unwrap().split(" ").filter(|p| *p != "Distance:" && *p!= "") {
-            distance += num;
+    for num in txt.next().unwrap().split(" ").filter(|p| *p != "Distance:" && *p!= "")
+        .map(|p| p.parse::<u64>().unwrap()) {
+            distance.push(num);
     }
     let mut r:u64 = 1;
-        let time_num = time.parse::<u64>().unwrap();
-        let dist_num = distance.parse::<u64>().unwrap();
+    for i in 0..time.len() {
         //println!("{}", find_win_ways(time[i], distance[i]));    
-        r*=find_win_ways(time_num, dist_num);
+        r*=find_win_ways(time[i], distance[i]);
+    }
     println!("{}", r);
 }
 
