@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, Display};
@@ -6,12 +5,27 @@ use std::vec;
 use std::cmp::{min, Ordering, Eq};
 use std::fmt;
 
-const  VALUEORD:[char; 13] = ['A', 'K', 'Q', 'T', '9', '8','7','6','5', '4', '3','2', 'J'];
+const  VALUEORD:[char; 13] = ['A', 'K', 'Q', 'J', 'T', '9', '8','7','6','5', '4', '3','2'];
 
+
+fn o2s(s: Ordering) -> char {
+    if s == Ordering::Equal {
+        return '=';
+    }
+    else if s == Ordering::Less {
+        return '<';
+    }
+    else {
+        return '>';
+    }
+}
+#[derive(Debug)]
 struct Card {
     c: char
 }
-impl Eq for Card {}
+impl Eq for Card {
+    
+}
 impl PartialEq for Card {
     fn eq(&self, other: &Self) -> bool {
         return self.c == other.c;
@@ -61,55 +75,46 @@ struct Hand {
     bid:u32
 }
 impl Hand {
-    fn get_type_n(v:&Vec<Card>) -> u8 {
-        let mut hmap: HashMap<char, u8> = HashMap::new();
-        //dbg!(v);
-        for c in v {
-            *hmap.entry(c.c).or_insert(0) += 1;
-        }
-        //dbg!(&hmap);
-        let mut nj = hmap.remove(&'J').unwrap_or(0);
-        if nj == 5 || nj == 4 {return 6;}
+    fn get_type(v:&Vec<Card>) -> u8 {
+        //dbg!(&v);
+        let mut p3 = 0;
+        let mut p2 = 0;
+        let mut p1 = 0;
         let mut p = [0, 0, 0, 0];
-        
-        let mut mv:Vec<u8> = hmap.iter().map(|f| *f.1).filter(|f| *f!= 0).collect();
-        mv.sort_by(|a, b| b.cmp(a));
-
-        let ccount = mv[0];
-        let ncount = nj + ccount;
-        if ccount == 5 {return 6;}
-        if ncount == 5 {return 6;}
-        if ncount == 4 {return 5;}
-        p[ncount as usize] += 1;
-        //dbg!(&mv);
-        for count in mv.iter().skip(1) {
-            p[*count as usize] += 1; 
+        for c in v {
+            let mut count = 0;
+            for cr in v {
+                if c == cr {
+                    count += 1;
+                }
+            }
+            if count == 5 {return 6;}
+            if count == 4 {return 5;}
+            p[count] += 1;
         }
-        if p[3] == 1 {
-            if p[2] == 1 {return 4;}
+        if p[3] == 3 {
+            if p[2] == 2 {return 4;}
             return 3;
         }
-        if p[2] == 2 {return 2;}
-        if p[2] == 1 {return 1;}
+        if p[2] == 4 {return 2;}
+        if p[2] == 2 {return 1;}
         //dbg!(p);
-        0
+        return 0;
     }
-    
+
     fn new(str: &str, bid:u32) -> Self {
         let mut l:Vec<Card> = vec![];
         for char in str.chars() {
             l.push(Card {c:char});
         }
-        let ctype = Hand::get_type_n(&l);
-        /*let ctype_old = Hand::get_type(&l);
-        if ctype != ctype_old {
-            println!("{} {} != {}", str, ctype, ctype_old);
-        }*/
+        let ctype = Hand::get_type(&l);
         Self {l, ctype, bid}
     }
 }
 
-impl Eq for Hand {}
+impl Eq for Hand {
+
+}
 impl fmt::Display for Hand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = String::from("");
@@ -156,6 +161,7 @@ impl PartialOrd for Hand {
         if self.ctype != other.ctype {return self.ctype > other.ctype}
         for i in 0..self.l.len() {
             if self.l[i] > other.l[i] {
+                //println!("{} {} {}", self.l[i].c, '>', other.l[i].c);
                 return true;
             }
             else if self.l[i] < other.l[i] {
@@ -167,11 +173,14 @@ impl PartialOrd for Hand {
     
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self.gt(other) {
+            //println!("{} {} {}", self, '>', other);
             return Some(std::cmp::Ordering::Greater);
         }
         else if self.eq(other) {
+            //println!("{} {} {}", self, '=', other);
             return Some(std::cmp::Ordering::Equal);
         }
+        //println!("{} {} {}", self, '<', other);
         return Some(std::cmp::Ordering::Less);
     }
 }
@@ -188,7 +197,10 @@ fn main() {
         let b = it.next().unwrap();
         hands.push(Hand::new(&h, b.parse::<u32>().unwrap()));
     }
+    //hands[2].p
+    //println!("{}", hands[1].partial_cmp(&hands[2]));
     hands.sort();
+    
     let mut sum = 0;
     for i in 0..hands.len() {
         let rank = (i+1) as u32;
