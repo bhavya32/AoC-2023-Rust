@@ -57,28 +57,16 @@ fn main() {
     let mut seq = iter::new(txt.next().unwrap());
 
     let map = create_map(txt.next().unwrap());
-    let mut stepsO:u64 = 1;
-    let mut curr_posv:Vec<&str> = Vec::new();
-    for i in map.keys() {
-        if i.ends_with('A') {
-            curr_posv.push(i);
-        }
+    let mut steps = 0;
+    let mut curr_pos = "AAA";
+    loop {
+        steps += 1;
+        let npos = map.get(curr_pos).unwrap()[seq.get_next()];
+        if npos == "ZZZ" {break;}
+        curr_pos = npos;
+        //println!("{}", npos);
     }
-    let mut toLCM:Vec<u32> = Vec::new();
-    for curr_pos in curr_posv {
-        let mut steps = 0;
-        let mut cp = curr_pos;
-        loop {
-            steps += 1;
-            let npos = map.get(cp).unwrap()[seq.get_next()];
-            if npos.ends_with('Z') {break;}
-            cp = npos;
-        }
-        seq.i = 0;
-        stepsO = num::integer::lcm(stepsO, steps);
-    }
-
-    println!("{}", stepsO);
+    println!("{}", steps);
 }
 
 
