@@ -28,7 +28,7 @@ fn get_next(t:Vec<i64>) -> i64 {
     if check_zeroes(&t) {return 0;}
     let mut d = diff_vec(&t);
 
-    return t[0] - get_next(d);
+    return t[t.len() - 1] + get_next(d);
 }
 fn main() {
     //let mut sum = 0;
