@@ -1,111 +1,168 @@
 #![allow(non_snake_case)]
-#![allow(dead_code)]
+use std::collections::{VecDeque, HashMap};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::vec;
 
-fn pr(matrix: & Vec<Vec<char>>) {
-    for x in matrix {
-        println!("{}", x.into_iter().collect::<String>());
-    }
-}
 
-fn is_row_empty(m: &mut Vec<Vec<char>>, i:usize) -> bool{
-    for j in 0..m[i].len() {
-        if m[i][j] != '.' {
-            return false;
-        }
-    }
-    return true;
-}
-
-fn is_col_empty(m: &mut Vec<Vec<char>>, j:usize) -> bool{
-    for i in 0..m.len() {
-        if m[i][j] != '.' {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-fn expand(m: &mut Vec<Vec<char>>) {
-    let mut rows:Vec<usize> = vec![];
-    let mut cols:Vec<usize> = vec![];
-    let mut ic = 0;
-    while ic < m[0].len() {
-        if is_col_empty(m, ic) {
-
-            cols.push(ic);
-        }
-        ic += 1;
-    }
-    
-    
-    let mut i = 0;
-    while i < m.len() {
-        if is_row_empty(m, i) {
-            rows.push(i);
-        }
-        i+=1;
-    }
-
-    findSum(m, rows, cols);
-
-    
-}
-
-fn get_row_dist(mut x1:usize, mut x2:usize,rows: &Vec<usize>) -> usize {
-    if x1 > x2 {
-        (x2, x1) = (x1, x2);
-    }
-    let mut r = x2-x1;
-
-    for row in rows {
-        if *row > x1 && *row < x2 {
-            r += 999999;
-        }
-    }
-    r
-}
-
-fn get_col_dist(mut y1:usize, mut y2:usize, cols:&Vec<usize>) -> usize{
-    if y1 > y2 {
-        (y2, y1) = (y1, y2);
-    }
-    let mut r = y2-y1;
-
-    for col in cols {
-        if *col > y1 && *col < y2 {
-            r += 999999;
-        }
-    }
-    r
-}
-
-fn findSum(m: &Vec<Vec<char>>, rows:Vec<usize>, cols:Vec<usize>) {
-    let mut loc: Vec<(usize, usize)> = vec![];
-    for i in 0..m.len() {
+fn get_start(m:&Vec<Vec<char>>) -> (usize, usize) {
+    let mut si = 0;
+    let mut sj = 0;
+    for i in 0..m.len(){
         for j in 0..m[i].len() {
-            if m[i][j] == '#' {
-                loc.push((i,j));
+            if m[i][j] == 'S' {
+                si = i;
+                sj = j;
+                break
             }
         }
     }
+    (si, sj)
+}
 
-    let mut sum = 0;
-    for i in 0..loc.len() {
-        let (x1, y1) = loc[i];
-        for j in i+1..loc.len() {
-            let (x2, y2) = loc[j];
-            sum += get_row_dist(x1, x2, &rows);
-            sum += get_col_dist(y1, y2, &cols);
-            //sum += x2.abs_diff(x1) + y2.abs_diff(y1);
+fn get_neighbours(i:usize, j:usize, maxI:usize, maxJ:usize, m:&Vec<Vec<char>>) -> Vec<(usize, usize)> {
+    let mut t:Vec<(usize, usize)> = vec![];
+
+    if m[i][j] == '|' {}
+
+    if i != 0 && (m[i][j] == '|' || m[i][j] == 'J' || m[i][j] == 'L' || m[i][j] == 'S'){
+        if m[i-1][j] == '|' || m[i-1][j] == 'F' || m[i-1][j] == '7' || m[i-1][j] == 'S' {
+        t.push((i-1, j));}
+    }
+    if i !=  maxI-1  && (m[i][j] == '|' || m[i][j] == 'F' || m[i][j] == '7'  || m[i][j] == 'S'){
+        if m[i+1][j] == '|' || m[i+1][j] == 'J' || m[i+1][j] == 'L' || m[i+1][j] == 'S' {
+        t.push((i+1, j));}
+    }
+    if j != 0  && (m[i][j] == '-' || m[i][j] == 'J' || m[i][j] == '7' || m[i][j] == 'S'){
+        if m[i][j-1] == '-' || m[i][j-1] == 'F' || m[i][j-1] == 'L' || m[i][j-1] == 'S' {
+        t.push((i, j-1));
+        }
+    }
+    if j != maxJ-1  && (m[i][j] == '-' || m[i][j] == 'F' || m[i][j] == 'L' || m[i][j] == 'S'){
+        if m[i][j+1] == '-' || m[i][j+1] == 'J' || m[i][j+1] == '7' || m[i][j+1] == 'S'{
+        t.push((i, j+1));}
+    }
+    t
+}
+
+
+fn count_tiles(mut v:Vec<Vec<char>>, vor:Vec<Vec<char>>) {
+    //first find and mark all within vertical boundaries
+    //for line in &mut v {
+    
+    for i in 0..v.len() {
+        for j in 0..v[i].len() {
+            
+            if v[i][j] == 'O'{
+                v[i][j] = vor[i][j]
+            } 
+            else {
+                v[i][j] = '.';
+            }
+
+        }
+    }
+    
+    
+    let mut opps:HashMap<char, [char; 2]> = HashMap::new();
+    let mut res = 0;
+    opps.insert('-', ['W', 'E']);
+    opps.insert('L', ['N', 'E']);
+    opps.insert('|', ['N', 'S']);
+    opps.insert('J', ['N', 'W']);
+    opps.insert('7', ['W', 'S']);
+    opps.insert('F', ['E', 'S']);
+    for i in 0..v.len() {
+        let mut start = false;
+        for j in 0..v[i].len() {
+            if v[i][j] == '.' {
+                if start {
+                    res += 1;
+                }
+                continue;
+            }
+            if opps.get(&v[i][j]).unwrap().contains(&'N') {
+                if start {
+                    start =false;
+                } else {
+                    start = true;
+                }
+            }
+            
+
         }
     }
 
-    println!("sum - {}", sum);
+    println!("inner tiles -  {}", res);
+    
+}
+
+fn get_start_char(mut xi:usize, mut xj:usize,mut ti:usize,mut tj:usize, si:usize, sj:usize) -> char {
+
+    if xi == ti {
+        return '-';
+    }
+    if xj == tj {
+        return '|';
+    }
+
+    if xi > ti {
+        (xi, xj, ti, tj) = (ti, tj, xi, xj);
+    }
+
+    if si != 0 && (si - 1, sj) == (xi, xj) {
+        //start is north
+        //end can be west or east
+
+        if xj > tj {
+            return 'J';
+        }else {
+            return 'L';
+        }
+    } else {
+        //end is south
+        //start can be west or east
+        if xj > tj {
+            return 'F';
+        }
+        return '7';
+    }
+}
+fn runBfs(mut m:Vec<Vec<char>>)-> u32 {
+    //find S
+    let mut mcopy = m.to_vec();
+    let (si, sj) = get_start(&m);
+    let mut q:VecDeque<(usize, usize, u32)> = VecDeque::new();
+    let maxI = m.len();
+    let maxJ = m[0].len();
+
+    //run bfs from every neighbour, and check which reaches s
+    for (xi, xj) in get_neighbours(si, sj, maxI, maxJ, &m) {
+        q.push_back((xi, xj, 0));
+        while q.len()>0 {
+            let (ti, tj, dist) = q.pop_front().unwrap();
+            //if dist > max_dist {max_dist = dist;}
+            for (i, j) in get_neighbours(ti, tj, maxI, maxJ, &m) {
+                if i == si && j == sj {
+                    if ti!= xi && tj!=xj {
+                        m[ti][tj] = 'O';
+                        mcopy[si][sj] = get_start_char(xi, xj, ti,tj,si,sj);
+                        m[si][sj] = 'O';
+                        count_tiles(m, mcopy);
+                    return (dist + 2)/2;}
+                    else {
+                        continue;
+                    }
+                }
+                if m[i][j] == '.' || m[i][j] == 'O' {continue;}
+                q.push_back((i,j,dist + 1));
+            }
+            m[ti][tj] = 'O';
+        } 
+    }
+
+    return 0;
 }
 
 fn main() {
@@ -118,10 +175,9 @@ fn main() {
         let t: Vec<char> = line.chars().collect();
         matrix.push(t);
     }
-    expand(&mut matrix);
-    
-    //pr(&matrix);
-    //findSum(&matrix);
+    let r = runBfs(matrix);
+    //dbg!(&matrix);
+    println!("{}", r);
 }
 
 

@@ -64,71 +64,74 @@ fn count_tiles(mut v:Vec<Vec<char>>, vor:Vec<Vec<char>>) {
         }
     }
     
-    for x in &v {
-        println!("{}", x.into_iter().collect::<String>());
-    }
-    let mut opps:HashMap<char, char> = HashMap::new();
-    opps.insert('-', '-');
-    opps.insert('L', 'J');
-    opps.insert('-', '-');
-    opps.insert('-', '-');
-    opps.insert('-', '-');
+    
+    let mut opps:HashMap<char, [char; 2]> = HashMap::new();
+    let mut res = 0;
+    opps.insert('-', ['W', 'E']);
+    opps.insert('L', ['N', 'E']);
+    opps.insert('|', ['N', 'S']);
+    opps.insert('J', ['N', 'W']);
+    opps.insert('7', ['W', 'S']);
+    opps.insert('F', ['E', 'S']);
     for i in 0..v.len() {
         let mut start = false;
-        let mut start_char= 'A';
         for j in 0..v[i].len() {
-            
-            if v[i][j] == 'O' || v[i][j] == 'S' {
-                if ['L', 'J', '|', '7', 'F'].contains(&vor[i][j]) {
-                    if start {
-                        if (start_char == '-' && vor[i][j] != '-') || (start_char == '-' && vor[i][j] == '-') ||  {
-                            continue;
-                        } 
-                        start =false;
-                    } else {
-                        start = true;
-                        start_char = vor[i][j];
-                    }
+            if v[i][j] == '.' {
+                if start {
+                    res += 1;
+                }
+                continue;
+            }
+            if opps.get(&v[i][j]).unwrap().contains(&'N') {
+                if start {
+                    start =false;
+                } else {
+                    start = true;
                 }
             }
-            else if start {
-                v[i][j] = 'X';
-                start_char = vor[i][j];
-            }
+            
 
         }
     }
-    let mut r = 0;
-    for j in 0..v[0].len() {
-        let mut start = false;
-        let mut start_char = 'A';
-        for i in 0..v.len() {
-            if v[i][j] == 'O' || v[i][j] == 'S' {
-                if ['L', 'J', '-', '7', 'F'].contains(&vor[i][j]) {
-                    if start {
-                        if start_char == '-' && vor[i][j] != '-' {
-                            continue;
-                        } 
-                        start =false;
-                    } else {
-                        start = true;
-                        start_char = vor[i][j];
-                    }
-                }
-            } 
-            else if start && v[i][j] == 'X'{
-                println!("coutning {}-{}", i, j);
-                r += 1;
-            }
-        }
-    }
-    println!("final - {}", r);
+
+    println!("inner tiles -  {}", res);
     
 }
 
+fn get_start_char(mut xi:usize, mut xj:usize,mut ti:usize,mut tj:usize, si:usize, sj:usize) -> char {
+
+    if xi == ti {
+        return '-';
+    }
+    if xj == tj {
+        return '|';
+    }
+
+    if xi > ti {
+        (xi, xj, ti, tj) = (ti, tj, xi, xj);
+    }
+
+    if si != 0 && (si - 1, sj) == (xi, xj) {
+        //start is north
+        //end can be west or east
+
+        if xj > tj {
+            return 'J';
+        }else {
+            return 'L';
+        }
+    } else {
+        //end is south
+        //start can be west or east
+        if xj > tj {
+            return 'F';
+        }
+        return '7';
+    }
+}
 fn runBfs(mut m:Vec<Vec<char>>)-> u32 {
     //find S
-    let mcopy = m.to_vec();
+    let mut mcopy = m.to_vec();
     let (si, sj) = get_start(&m);
     let mut q:VecDeque<(usize, usize, u32)> = VecDeque::new();
     let maxI = m.len();
@@ -144,6 +147,8 @@ fn runBfs(mut m:Vec<Vec<char>>)-> u32 {
                 if i == si && j == sj {
                     if ti!= xi && tj!=xj {
                         m[ti][tj] = 'O';
+                        mcopy[si][sj] = get_start_char(xi, xj, ti,tj,si,sj);
+                        m[si][sj] = 'O';
                         count_tiles(m, mcopy);
                     return (dist + 2)/2;}
                     else {
