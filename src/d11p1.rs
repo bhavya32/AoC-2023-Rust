@@ -31,13 +31,15 @@ fn is_col_empty(m: &mut Vec<Vec<char>>, j:usize) -> bool{
 }
 
 fn expand(m: &mut Vec<Vec<char>>) {
-    let mut rows:Vec<usize> = vec![];
-    let mut cols:Vec<usize> = vec![];
     let mut ic = 0;
     while ic < m[0].len() {
         if is_col_empty(m, ic) {
 
-            cols.push(ic);
+            for row in &mut *m {
+                row.insert(ic, '.');
+            }
+
+            ic += 1;
         }
         ic += 1;
     }
@@ -46,45 +48,16 @@ fn expand(m: &mut Vec<Vec<char>>) {
     let mut i = 0;
     while i < m.len() {
         if is_row_empty(m, i) {
-            rows.push(i);
+            m.insert(i, vec!['.'; m[0].len()]);
+            i += 1;
         }
         i+=1;
     }
 
-    findSum(m, rows, cols);
-
     
 }
 
-fn get_row_dist(mut x1:usize, mut x2:usize,rows: &Vec<usize>) -> usize {
-    if x1 > x2 {
-        (x2, x1) = (x1, x2);
-    }
-    let mut r = x2-x1;
-
-    for row in rows {
-        if *row > x1 && *row < x2 {
-            r += 999999;
-        }
-    }
-    r
-}
-
-fn get_col_dist(mut y1:usize, mut y2:usize, cols:&Vec<usize>) -> usize{
-    if y1 > y2 {
-        (y2, y1) = (y1, y2);
-    }
-    let mut r = y2-y1;
-
-    for col in cols {
-        if *col > y1 && *col < y2 {
-            r += 999999;
-        }
-    }
-    r
-}
-
-fn findSum(m: &Vec<Vec<char>>, rows:Vec<usize>, cols:Vec<usize>) {
+fn findSum(m: &Vec<Vec<char>>) {
     let mut loc: Vec<(usize, usize)> = vec![];
     for i in 0..m.len() {
         for j in 0..m[i].len() {
@@ -99,9 +72,7 @@ fn findSum(m: &Vec<Vec<char>>, rows:Vec<usize>, cols:Vec<usize>) {
         let (x1, y1) = loc[i];
         for j in i+1..loc.len() {
             let (x2, y2) = loc[j];
-            sum += get_row_dist(x1, x2, &rows);
-            sum += get_col_dist(y1, y2, &cols);
-            //sum += x2.abs_diff(x1) + y2.abs_diff(y1);
+            sum += x2.abs_diff(x1) + y2.abs_diff(y1);
         }
     }
 
@@ -121,7 +92,7 @@ fn main() {
     expand(&mut matrix);
     
     //pr(&matrix);
-    //findSum(&matrix);
+    findSum(&matrix);
 }
 
 
