@@ -1,10 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::collections::{VecDeque, HashSet};
-use std::time::Instant;
 use std::{fs, collections::HashMap};
-
-use num::Integer;
 //use std::time::Instant;
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
@@ -75,15 +72,25 @@ fn get_map<'a>(hmap:&HashMap<&'a str, Module<'a>>) -> Cnjmap<'a> {
     x
 }
 
-fn d20(mut hmap:HashMap<&str, Module>, djinplen:usize)-> u128 {
+fn d20(mut hmap:HashMap<&str, Module>, djinplen:usize)-> (u64, u64) {
     let mut queue:VecDeque<(PulseType, &str, &str)> = VecDeque::new();
+    let mut hpulse = 0;
+    let mut lpulse = 0;
     let mut cnjmp = get_map(&hmap);
     let mut cyclemap:HashMap<&str, usize> = HashMap::new();
-    for i in 1..100000001 {
+    for i in 1..1001 {
         queue.push_back((PulseType::Low, "broadcaster", "origin"));
 
         while let Some((p, m, from)) = queue.pop_front() {
             //println!("sending {:?} to {}", p, m);
+            
+            match p {
+                PulseType::High => {hpulse += 1;},
+                PulseType::Low =>  {
+                    if m == "rx" {println!("{i}");return(0,0);}
+                    lpulse += 1;
+                }
+            };
             let mut hm;
             match hmap.get_mut(m){
                 Some(xt)  => {hm = xt;},
@@ -120,16 +127,13 @@ fn d20(mut hmap:HashMap<&str, Module>, djinplen:usize)-> u128 {
                         PulseType::Low
                     };
                     if m == "dg" && p.num() == 1{
+                        if cyclemap.len() == djinplen {
+                            println!("{:?}", cyclemap);
+                        }
                         if !cyclemap.contains_key(from) {
                             cyclemap.insert(from, i);
                         }
-                        if cyclemap.len() == djinplen {
-                            let mut res:u128 = 1;
-                            for loc in cyclemap.values() {
-                                res = res.lcm(&(*loc as u128));
-                            }
-                            return res;
-                        }
+                        println!("got a high pulse from {} at {}", from, i);
                     }
                     for i in 0..hm.next.len() {
                         queue.push_back((np, hm.next[i], m));
@@ -138,7 +142,7 @@ fn d20(mut hmap:HashMap<&str, Module>, djinplen:usize)-> u128 {
             };
         }
     }
-    0
+    (hpulse, lpulse)
 }
 fn main() {
     let text = fs::read_to_string("./q.txt").expect("Unable to read file");
@@ -169,10 +173,11 @@ fn main() {
         modules.insert(k, Module { state: 0, next: v, tp });
     }
     //println!("{:?}", djinplen);
-    
-    let now = Instant::now();
-    let res = d20(modules, djinplen);
+    let (hpulse, lpulse) = d20(modules, djinplen);
+    println!("{:?}, {}", (hpulse, lpulse), hpulse*lpulse);
+    /*let now = Instant::now();
+    let t = d19(workflow);
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
-    println!("{}", res);
+    println!("{t}");*/
 }
